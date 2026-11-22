@@ -32,6 +32,11 @@ describe('Inhalte', () => {
     for (const table of c.expedition.expedition) expect(table.entries).toHaveLength(RANKS.length);
   });
 
+  it('Regelbuch (5zk): zu jeder Doppelseite liegt das Bild in public/assets/book', () => {
+    expect(content.book.spreads).toHaveLength(8);
+    for (const s of content.book.spreads) expect(existsSync(resolve(import.meta.dirname, `../../public/assets/book/${s.id}.webp`)), s.id).toBe(true);
+  });
+
   it('Trümpfe je Kategorie und Stufe wie bisher', () => {
     const count = (cat: string, lvl: number) => content.trumps.filter((t) => t.category === cat && t.level === lvl).length;
     for (const cat of ['K', 'P', 'V', 'X']) expect([1, 2, 3].map((l) => count(cat, l)), cat).toEqual([4, 4, 3]);
@@ -47,6 +52,9 @@ describe('Prüfungen schlagen an', () => {
   it.each<[string, (raw: any) => void, RegExp]>([
     ['vertippter Baustein', (r) => (r.trumpSources.trumpSources[0].requires = ['noTrumpYt']), /trumpSources/],
     ['Karte doppelt', (r) => r.deck.start.deck.push('D2'), /D2 kommt doppelt/],
+    ['Regelbuch: Doppelseite doppelt', (r) => (r.book.spreads[2].id = 'p01'), /Doppelseite doppelt: p01/],
+    ['Regelbuch: Blatt nicht spiegelbildlich', (r) => (r.layouts.book.pages.right[0] += 4), /nicht spiegelbildlich zur Buchmitte/],
+    ['Regelbuch: Seiten ungleich groß', (r) => (r.layouts.book.pages.left[3] -= 10), /nicht gleich groß/],
     ['Karte fehlt', (r) => r.deck.start.clubs.pop(), /CK hat keine Startzone/],
     ['Ziehen in unbekannte Zone', (r) => (r.zones.deck.actions.draw.to = 'ablage'), /unbekannter Zone ablage/],
     ['Trumpf-ID doppelt', (r) => (r.trumps[1].id = r.trumps[0].id), /ID doppelt/],

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { RANKS, SUITS } from '../../../engine/types.ts';
 import { resolveText } from './texts.ts';
 import {
-  DeckFile, ExpeditionFile, LayoutsFile, NamesFile, PermissionsFile, SheetFile, SkinFile,
+  BookFile, DeckFile, ExpeditionFile, LayoutsFile, NamesFile, PermissionsFile, SheetFile, SkinFile,
   TablesFile, TextsFile, TrumpSourcesFile, TrumpsFile, ZonesFile, sheetFieldInstances, sheetFields, type TextTree,
 } from './schema.ts';
 
@@ -13,6 +13,7 @@ export const CONTENT_FILES = {
   trumps: TrumpsFile,
   tables: TablesFile,
   expedition: ExpeditionFile,
+  book: BookFile,
   names: NamesFile,
   deck: DeckFile,
   zones: ZonesFile,
@@ -61,6 +62,17 @@ function crossCheck(c: KlioContent, errors: string[]): void {
     }
     if (new Set(t.attributes).size !== t.attributes.length) err(`trumps: ${t.id}: Attribut doppelt`);
   }
+
+  // Regelbuch (5zk): jede Doppelseite einmal, Buchmitte im Einband
+  const spreadIds = c.book.spreads.map((s) => s.id);
+  for (const id of spreadIds) if (spreadIds.indexOf(id) !== spreadIds.lastIndexOf(id)) err(`book: Doppelseite doppelt: ${id}`);
+  const B = c.layouts.book;
+  if (B.spine <= B.cover[0] || B.spine >= B.cover[0] + B.cover[2]) err('layouts: book.spine liegt nicht im Einband');
+  // das Blatt klappt um die Buchmitte von einer Seite genau auf die andere
+  const [pl, pr] = [B.pages.left, B.pages.right];
+  if (pl[2] !== pr[2] || pl[1] !== pr[1] || pl[3] !== pr[3]) err('layouts: book.pages links und rechts sind nicht gleich groß oder gleich hoch');
+  if (pl[0] + pl[2] > B.spine || pr[0] < B.spine || B.spine - (pl[0] + pl[2]) !== pr[0] - B.spine) err('layouts: book.pages liegen nicht spiegelbildlich zur Buchmitte');
+  if (B.cover[0] + B.cover[2] > B.size[0] || B.cover[1] + B.cover[3] > B.size[1]) err('layouts: book.cover ragt aus dem Bild');
 
   // Karten: jede der 52 genau einmal, nur in Tischzonen
   const all = SUITS.flatMap((s) => RANKS.map((r) => s + r));
