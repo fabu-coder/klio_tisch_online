@@ -2,7 +2,7 @@
   // Stärke verbessern: erst die Stärke wählen, dann die neue Formulierung (leer = alte bleibt).
   import { t } from '../texts';
   import type { StepProps } from './props';
-  let { ctx, done, end }: StepProps = $props();
+  let { ctx, improveOnly, done, end }: StepProps = $props();
 
   let chosen = $state<number | null>(null);
   let wording = $state('');
@@ -10,12 +10,13 @@
 </script>
 
 {#if chosen === null}
-  <p class="note">{t('trumpDialog.improveHint')}</p>
+  <p class="note">{t('trumpDialog.improveHint')} {improveOnly ? t('trumpDialog.improveOnlyHint') : t('trumpDialog.improveThen')}</p>
   <div class="dialog-choices">
     {#each ctx.sheet.strengths as s, i (i)}
       <button class="dialog-choice" disabled={s.improved} onclick={() => { chosen = i; wording = s.text; }}>
         <b>{t(`numerals.${i + 1}`)} · {s.text || t('trumpDialog.empty')}</b>
-        {#if s.improved}<span class="note">{t('trumpDialog.alreadyImproved')}</span>{/if}
+        <!-- die Zeile des Bogens, in der die Stärke steht: daran erkennt man das Feld wieder -->
+        <span class="note">{t(`trumpDialog.strengthLine.${ctx.sheet.variant}.${i + 1}`)}{#if s.improved} · {t('trumpDialog.alreadyImproved')}{/if}</span>
       </button>
     {/each}
   </div>

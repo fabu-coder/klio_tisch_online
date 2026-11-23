@@ -1,8 +1,8 @@
 // Mehrspielerbetrieb über echte WebRTC-Verbindungen (Trystero/Nostr).
 // Braucht Internet und öffentliche Vermittlungsdienste; läuft daher nur mit E2E_NETWORK=1.
 
-import { expect, test, type Page } from '@playwright/test';
-import { buildFreePile, cancelPointer, cardEl, dragFromTo, expectCount, expectInStage, fromMenu, holdOver, makePng, menuButton, menuEntries, nameCharacter, openMenuAndClick, openRoom, openSettings, ready, setField, shiftHold, zoneCenter } from './helpers';
+import { expect, test, type Browser, type Page } from '@playwright/test';
+import { buildFreePile, cancelPointer, cardEl, dragFromTo, expectCount, expectInStage, fromMenu, holdOver, makePng, menuButton, menuEntries, nameCharacter, openMenuAndClick, openRoom, openSettings, setField, shiftHold, zoneCenter } from './helpers';
 
 test.skip(!process.env.E2E_NETWORK, 'nur mit E2E_NETWORK=1 (echte Verbindung)');
 test.setTimeout(90_000);
@@ -388,12 +388,17 @@ test('Menü am Namensschild mit Mitspieler (5j): eigener Bogen, fremde Schilder,
   const foreignSlot = player.locator('[data-sheet=seat1] [data-slot="0"]');
   await foreignSlot.hover();
   await expect(foreignSlot).not.toHaveAttribute('role');
-  await expect(foreignSlot).not.toHaveAttribute('title');
+  await expect(foreignSlot).not.toHaveAttribute('aria-label');
   await expect(foreignSlot).toHaveCSS('cursor', 'default');
-  await expect(foreignSlot).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  // keine Geisterkarte und keine Zeile am fremden Feld (5zn), am eigenen schon
+  await expect(foreignSlot.locator('.ghost, .hint')).toHaveCount(0);
+  await expect(foreignSlot).not.toHaveClass(/(^|\s)go(\s|$)/);
   const ownSlot = player.locator('[data-sheet=seat2] [data-slot="0"]');
   await expect(ownSlot).toHaveAttribute('role', 'button');
+  await expect(ownSlot).toHaveAttribute('aria-label', 'Trumpf wählen');
   await expect(ownSlot).toHaveCSS('cursor', 'pointer');
+  await ownSlot.hover();
+  await expect.poll(() => ownSlot.locator('.ghost').evaluate((el) => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.3);
   // Feldfenster (5z): fremdes Feld nur lesen und folgt Änderungen; eigener Entwurf bleibt mit Hinweis (F2 a)
   const long = 'Ein sehr langes Seil aus Hanf, zwanzig Meter, an einem Ende ausgefranst und am anderen Ende mit einem Haken';
   await setField(gm, 'seat1', 'gear.text.0', long);
@@ -610,6 +615,31 @@ test('Stapelmenü (5o): Rechte ändern sich bei offenem Menü; Eintrag wird ausg
   await expect(player.locator('[data-zone=deck]')).not.toHaveAttribute('role', 'button');
 });
 
+test('Erlebnislaterne mit Mitspieler (5zm): schnelle Klicks zählen alle; fremder Bogen nur mit dem Recht „für alle“', async ({ browser }) => {
+  const { gm, link } = await openRoom(browser);
+  const player = await (await browser.newContext()).newPage();
+  await joinAs(player, link, 'Ida', 2);
+  await player.keyboard.press('0');
+  const own = player.locator('[data-sheet=seat2] [data-lantern]');
+  const foreign = player.locator('[data-sheet=seat1] [data-lantern]');
+  // drei Klicks, bevor der Host den ersten bestätigt: Endstand 3, auch bei der SL
+  await expect(own).toBeEnabled();
+  await own.evaluate((el: HTMLElement) => { el.click(); el.click(); el.click(); });
+  await expect(own).toHaveAttribute('data-lantern', '3');
+  await expect(gm.locator('[data-sheet=seat2] [data-lantern]')).toHaveAttribute('data-lantern', '3');
+
+  // Voreinstellung „nur eigener Bogen“: fremde Laterne zeigt nur an
+  await expect(foreign).toBeDisabled();
+  await expect(foreign).toHaveAttribute('title', 'Erlebnisse: 0 von 3');
+  const rights = await openSettings(gm, 'Rechte der Spieler');
+  await rights.getByRole('combobox', { name: 'Bogen bearbeiten' }).selectOption('allow');
+  await expect(foreign).toBeEnabled();
+  await foreign.click();
+  await expect(gm.locator('[data-sheet=seat1] [data-lantern]')).toHaveAttribute('data-lantern', '1');
+  await rights.getByRole('combobox', { name: 'Bogen bearbeiten' }).selectOption('deny');
+  await expect(own).toBeDisabled();
+});
+
 test('Trumpf wählen mit Mitspieler (5y, F2 und F3): „Freie Wahl“ nur mit Recht; entzogen mitten in der Wahl steht der Grund im Fenster', async ({ browser }) => {
   const { gm, link } = await openRoom(browser);
   const player = await (await browser.newContext()).newPage();
@@ -624,9 +654,10 @@ test('Trumpf wählen mit Mitspieler (5y, F2 und F3): „Freie Wahl“ nur mit Re
   const free = rights.getByRole('combobox', { name: 'Trumpf frei wählen (ohne Regelprüfung)' });
   await free.selectOption('allow');
   await dialog.getByRole('button', { name: 'Freie Wahl' }).click();
-  await dialog.getByRole('button', { name: /^Verschiedene/ }).click();
+  await dialog.getByRole('tab', { name: /^Verschiedene/ }).click();
   await free.selectOption('deny');
   await dialog.getByRole('button', { name: /Kraftakt/ }).click();
+  await dialog.getByRole('button', { name: 'Trumpf nehmen' }).click();
   await expect(dialog.getByRole('alert')).toHaveText('Dafür fehlt dir die Berechtigung.');
   await expect(player.locator('[data-sheet=seat2] [data-slot="0"] .tcard')).toHaveCount(0);
 });
@@ -713,7 +744,7 @@ async function watchToasts(page: Page) {
 }
 
 /** SL mit offenem Raum und Protokoll; liefert Seite, Link und Einträge im Protokoll */
-async function openTable(browser: import('@playwright/test').Browser) {
+async function openTable(browser: Browser) {
   const { gm, link } = await openRoom(browser);
   await fromMenu(gm, 'Protokoll');
   const log = () => gm.getByRole('list', { name: 'Protokoll' }).locator('li').allTextContents();

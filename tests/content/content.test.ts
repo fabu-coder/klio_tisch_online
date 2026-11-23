@@ -59,8 +59,14 @@ describe('Prüfungen schlagen an', () => {
     ['Ziehen in unbekannte Zone', (r) => (r.zones.deck.actions.draw.to = 'ablage'), /unbekannter Zone ablage/],
     ['Trumpf-ID doppelt', (r) => (r.trumps[1].id = r.trumps[0].id), /ID doppelt/],
     ['Kategorie passt nicht', (r) => (r.trumps[0].attributes = ['V']), /passt nicht zu Attributen/],
-    ['Haut ohne Feld', (r) => delete r.skinPaper.fields['lamps.2'], /lamps\.2 hat keine Position/],
-    ['Haut mit fremdem Feld', (r) => (r.skinPaper.fields['lamps.3'] = { x: 0, y: 0, size: 10 }), /unbekanntes Feld lamps\.3/],
+    ['Haut ohne Feld', (r) => delete r.skinPaper.fields['weaknessMarks.2'], /weaknessMarks\.2 hat keine Position/],
+    ['Haut mit fremdem Feld', (r) => (r.skinPaper.fields['weaknessMarks.3'] = { x: 0, y: 0, size: 10 }), /unbekanntes Feld weaknessMarks\.3/],
+    ['Laterne: Kästchen mit eigener Position', (r) => (r.skinPaper.fields['lamps.0'] = { x: 0, y: 0, size: 10 }), /lamps\.0 gehört zur Laterne/],
+    ['Laterne: Abschnitt fehlt', (r) => r.skinPaper.lantern.segments.pop(), /lantern braucht 3 Abschnitte/],
+    ['Laterne: Flammengröße fehlt', (r) => r.skinPaper.lantern.flame.sizes.pop(), /lantern\.flame braucht 3 Größen/],
+    ['Laterne: keine Kästchenliste', (r) => (r.skinPaper.lantern.field = 'weaknesses'), /lantern\.field weaknesses ist keine Kästchenliste/],
+    ['Laterne: Knöpfe im Feld', (r) => (r.skinPaper.lantern.steps.x = 540), /Knöpfe der Laterne reichen in experiences\.2/],
+    ['Laterne: Klickfläche zu groß', (r) => (r.skinPaper.lantern.hit.y = 830), /Klickfläche der Laterne reicht in trumps\.3/],
     ['Hervorhebung ohne Textfeld', (r) => (r.sheet.fields['strengths.improved'].emphasizes = 'strengths.txt'), /strengths\.improved\.0 verweist auf strengths\.txt\.0/],
     ['Klickfläche zu groß', (r) => (r.skinPaper.fields['weaknessMarks.1'].hit = 20), /Klickfläche von weaknessMarks\.1 reicht in weaknessMarks\.(0|2)/],
     ['maxTrumps passt nicht', (r) => (r.trumpSources.maxTrumps = 5), /maxTrumps 5/],
@@ -74,6 +80,8 @@ describe('Prüfungen schlagen an', () => {
 });
 
 // Gegenprobe mit der alten Datei: Jeder Spieltext steht dort genau so.
+// Ohne die Trümpfe (5zt, ARCHITEKTUR.md 10.22): Ihre Vorlage ist seit e157779 die Klio_Trümpfe_Liste_2.1.docx, 20 Texte
+// stehen bewusst anders als in der alten Datei. Geprüft bleiben Tabellen, Expedition, Orakel, Namen und Wege zum Trumpf.
 // Die alte Datei ist nicht im Repository; ohne sie wird die Prüfung übersprungen.
 const LEGACY = resolve(import.meta.dirname, '../../Kartentisch (3).html');
 
@@ -87,7 +95,6 @@ describe.skipIf(!existsSync(LEGACY))('wortgetreu aus der alten Datei', () => {
     const c = content;
     const gendered = (g: string | { m: string; w: string }) => (typeof g === 'string' ? g : `${g.m}|${g.w}`);
     return [
-      ...c.trumps.flatMap((t) => [t.name, t.text]),
       ...Object.values(c.tables).flatMap((t) => [...Object.values(t.H), ...Object.values(t.S)].map(gendered)),
       ...c.expedition.expedition.flatMap((e) => [e.prompt, ...e.entries]),
       ...Object.values(c.expedition.oracle).flatMap((o) => Object.values(o)),
@@ -96,8 +103,11 @@ describe.skipIf(!existsSync(LEGACY))('wortgetreu aus der alten Datei', () => {
     ];
   }
 
-  // Bewusst an das Regelwerk 2.1 angepasst, steht daher anders in der alten Datei
-  const updated = new Set([content.trumps.find((t) => t.id === 'kuehler-kopf')!.text]);
+  // Bewusst geändert (5zu, 10.22 F6): Seit der Erlebnislaterne (5zm) gibt es am Bogen keine Lampenfelder mehr
+  const updated = new Set([
+    'Erlebnislaterne voll: erst eine Stärke verbessern, dann einen Trumpf der Stufe I oder II wählen.',
+    'Dafür muss die Erlebnislaterne voll sein.',
+  ]);
 
   it('jeder Text kommt in der alten Datei als Zeichenkette vor', () => {
     const missing = texts().filter((t) => !quoted(t) && !updated.has(t));

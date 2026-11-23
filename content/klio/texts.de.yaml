@@ -61,8 +61,14 @@ sheet:
   photoUnreadable: Das Bild konnte nicht gelesen werden.   # neu
   photoTitle: Foto wählen, ein Bild hierher ziehen oder einfügen (Strg+V)   # neu, 5z
   strike: Untauglich markieren (durchstreichen)
+  lantern: "Erlebnisse: {n} von {max}"       # Laterne am Bogen (neu, 5zm)
+  lanternHint: Klick füllt, Rechtsklick leert.
+  lanternFill: Laterne füllen
+  lanternEmpty: Laterne leeren
+  lanternImprove: Stärke verbessern        # Marke an der vollen Laterne bei vollem Bogen (neu, 5zu)
   trumpChoose: Trumpf wählen
   trumpLocked: Trumpf (noch nicht freigeschaltet)
+  trumpLockedHint: noch nicht freigeschaltet   # sichtbare Zeile im gesperrten Feld (neu, 5zn)
   trumpRemove: Trumpf entfernen
   more: Ganzen Text zeigen                 # „…“ an abgeschnittenen Feldern (neu, 5z)
   field:                                  # Feldfenster (neu, 5z, 10.11)
@@ -95,16 +101,62 @@ trumpDialog:
     chooseWeaknessToRemove: Welche Schwäche entfällt?
     improveStrength: Welche Stärke verbessern?
     moveAttributePoint: Attributspunkt umverteilen
-  count: "Trümpfe: {n} von {max}"
+  # Einstieg (5zu, 10.22)
+  introNone: Du hast noch keinen Trumpf. Wähle deinen Starttrumpf.
+  introSome: "Du hast {n} von {max} Trümpfen. Einen neuen bekommst du zu einem dieser Anlässe:"
+  introFull: "Du hast {max} von {max} Trümpfen, mehr sind nicht möglich. Ein eingetroffenes Erlebnis verbessert dann nur noch eine Stärke."
+  later: Noch nicht möglich
+  improveOnly: "Du hast schon alle Trümpfe: nur eine Stärke verbessern."
+  progress:                               # Stand einer offenen Voraussetzung, je Kästchenliste
+    lamps: "Erlebnislaterne: {n} von {max}"
+    weaknessMarks: "Verbessern: {n} von {max}"
+  randomHint: nimmt den ersten möglichen Anlass und entscheidet alles Weitere zufällig.
+  freeHint: Wähle einen Trumpf, den du noch nicht hast. Stufe und Attribute sind frei.
   random: Zufälliger Trumpf
   free: Freie Wahl
   back: "← Zurück"
   next: Weiter
-  chooseAttribute: Für welches Attribut?
-  selectable: "({n} wählbar)"
-  chooseFromCategory: "{category} · Trumpf wählen"
+  # Trumpfliste mit Reitern (5zx, 10.22)
+  chooseTrump: Welchen Trumpf?
+  groups: Gruppen der Trümpfe
+  allSelectable: Alle wählbaren
+  notSelectable: Nicht wählbar
+  noneInGroup: In dieser Gruppe ist gerade kein Trumpf wählbar.
+  # Wegleiste und Grund je Schritt (5zv, 10.22)
+  trail:
+    label: Ablauf
+    chooseWeaknessToRemove: Schwäche
+    improveStrength: Stärke
+    moveAttributePoint: Attributspunkt
+    trump: Trumpf
+    confirm: Bestätigen
+  # Bestätigen (5zw, 10.22)
+  confirmTrump: Diesen Trumpf nehmen?
+  confirmImprove: Stärke verbessern?
+  afterTitle: "Das geschieht am Bogen:"
+  take: Trumpf nehmen
+  improve: Stärke verbessern
+  changed: Der Bogen hat sich inzwischen geändert. Die Liste zeigt den aktuellen Stand.
+  after:
+    weakness: "Die Schwäche „{text}“ wird gestrichen."
+    weaknessMarks: Die drei Verbessern-Kästchen werden geleert.
+    strength: "Stärke {n} „{text}“ wird als verbessert markiert."
+    strengthEmpty: "Stärke {n} wird als verbessert markiert."
+    strengthText: "Stärke {n} heißt jetzt „{text}“ und wird als verbessert markiert."
+    lamps: Die Erlebnislaterne wird geleert.
+    attribute: "{attr}: {from} → {to}"
+    newScars: Eine neue Narbe wird verbraucht.
+    slot: "Der Trumpf kommt in das {n}. Trumpffeld."
+    other: "{field} ändert sich."
+  weaknessHint: Du hast eine Schwäche überwunden. Welche wird vom Bogen gestrichen? Danach wählst du einen Trumpf der Stufe I.
+  improveThen: Danach wählst du einen Trumpf der Stufe I oder II.
+  improveOnlyHint: Du hast schon alle Trümpfe, deshalb bleibt es bei der Verbesserung.
+  attributeHint: Mit der neuen Narbe verschiebst du einen Attributspunkt. Der Trumpf, den du danach wählst, muss das erhöhte Attribut benötigen.
   empty: (leer)
-  improveHint: Eine der fünf Stärken darf besser werden. Das Kästchen daneben wird markiert.
+  improveHint: Stärken sind die fünf Textfelder oben auf dem Bogen, von der Rolle im Team bis zum Motto. Eine davon darf besser werden; das Kästchen daneben wird markiert.
+  strengthLine:                           # wo die Stärke auf dem Bogen steht, Wortlaut des Bogens (er/sie-Form)
+    m: { 1: "ist der … des Teams", 2: "ist ausgestattet mit …", 3: "und …", 4: "Als …", 5: "lebt er nach dem Motto …" }
+    w: { 1: "ist die … des Teams", 2: "ist ausgestattet mit …", 3: "und …", 4: "Als …", 5: "lebt sie nach dem Motto …" }
   alreadyImproved: bereits verbessert
   skipImprove: Ohne Verbesserung weiter
   newWording: Neue Formulierung
